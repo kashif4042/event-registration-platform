@@ -1,0 +1,9 @@
+package com.kashif.event_registration_platform.event.service;
+
+import com.kashif.event_registration_platform.auth.entity.User;
+import com.kashif.event_registration_platform.event.dto.EventRequest;
+import com.kashif.event_registration_platform.event.dto.EventResponse;
+
+public interface EventService {
+    EventResponse createEvent(EventRequest request, User organiser);
+}
