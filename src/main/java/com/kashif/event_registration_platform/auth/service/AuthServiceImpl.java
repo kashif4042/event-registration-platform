@@ -13,6 +13,7 @@ import com.kashif.event_registration_platform.common.security.CustomUserDetails;
 import com.kashif.event_registration_platform.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,9 +48,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request){
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            throw new ResourceNotFoundException("Invalid email or password");
+        }
 
         User user = userRepository.findByEmail(request.getEmail()).orElseThrow(()-> new ResourceNotFoundException("Invalid Email or Password"));
 
