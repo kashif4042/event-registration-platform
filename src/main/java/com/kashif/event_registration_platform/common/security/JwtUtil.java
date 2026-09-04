@@ -2,6 +2,7 @@ package com.kashif.event_registration_platform.common.security;
 
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import io.jsonwebtoken.Jwts;
 import java.util.Date;
@@ -11,9 +12,9 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    public String generateAccessToken(String email){
+    public String generateAccessToken(UserDetails userDetails){
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis()+1000 * 60 * 15))
                 .signWith(SignatureAlgorithm.HS256 , secretKey)
@@ -21,9 +22,9 @@ public class JwtUtil {
 
     }
 
-    public String generateRefreshToken(String email){
+    public String generateRefreshToken(UserDetails userDetails){
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7)) // 7 days
                 .signWith(SignatureAlgorithm.HS256, secretKey)
@@ -38,9 +39,9 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    public boolean isTokenValid(String token, String email) {
+    public boolean isTokenValid(String token, UserDetails userDetails) {
         String username = extractUsername(token);
-        return username.equals(email) && !isTokenExpired(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {

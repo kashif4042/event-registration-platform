@@ -9,8 +9,11 @@ import com.kashif.event_registration_platform.auth.entity.User;
 import com.kashif.event_registration_platform.auth.repository.UserRepository;
 import com.kashif.event_registration_platform.common.exception.DuplicateResourceException;
 import com.kashif.event_registration_platform.common.exception.ResourceNotFoundException;
+import com.kashif.event_registration_platform.common.security.CustomUserDetails;
 import com.kashif.event_registration_platform.common.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +26,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AuthenticationManager authenticationManager;
 
     @Override
     public UserResponse register(RegisterRequest request){
@@ -43,22 +47,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request){
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid email or password"));
-        if (!passwordEncoder.matches(request.getPassword(),user.getPasswordHash())) {
-            throw new ResourceNotFoundException("Invalid email or password");
-        }
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(()-> new ResourceNotFoundException("Invalid Email or Password"));
+
+        CustomUserDetails customUserDetails = new CustomUserDetails(user);
+
+        String accessToken = jwtUtil.generateAccessToken(customUserDetails);
+        String refreshToken = jwtUtil.generateRefreshToken(customUserDetails);
 
         user.setRefreshToken(refreshToken);
         userRepository.save(user);
         UserResponse userResponse = new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getIsVerified());
         return new AuthResponse(accessToken, refreshToken, userResponse);
         }
-
-
-
     }
 
