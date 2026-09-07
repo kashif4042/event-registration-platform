@@ -56,7 +56,8 @@ public class AuthServiceImpl implements AuthService {
             throw new ResourceNotFoundException("Invalid email or password");
         }
 
-        User user = userRepository.findByEmail(request.getEmail()).orElseThrow(()-> new ResourceNotFoundException("Invalid Email or Password"));
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(()-> new ResourceNotFoundException("Invalid Email or Password"));
 
         CustomUserDetails customUserDetails = new CustomUserDetails(user);
 

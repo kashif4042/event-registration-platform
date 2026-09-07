@@ -6,4 +6,7 @@ import com.kashif.event_registration_platform.event.dto.EventResponse;
 
 public interface EventService {
     EventResponse createEvent(EventRequest request, User organiser);
+    EventResponse publishEvent(Long eventId, User organiser);
+    EventResponse unpublishEvent(Long eventId, User organiser);
+
 }
