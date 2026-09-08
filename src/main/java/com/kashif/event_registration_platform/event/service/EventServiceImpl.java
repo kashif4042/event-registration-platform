@@ -91,4 +91,29 @@ public class EventServiceImpl implements EventService {
                 savedEvent.getCreatedAt(),
                 savedEvent.getOrganiser().getName());
     }
+    @Override
+    public EventResponse cancelEvent(Long eventId, User organiser) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event Not Found"));
+
+        if (!event.getOrganiser().getId().equals(organiser.getId())) {
+            throw new UnauthorizedActionException("You are not authorized to modify this event");
+        }
+
+        if (event.getStatus() != EventStatus.DRAFT && event.getStatus() != EventStatus.PUBLISHED) {
+            throw new InvalidStateTransitionException("Only a DRAFT or PUBLISHED event can be cancelled");
+        }
+
+        event.setStatus(EventStatus.CANCELLED);
+        Event savedEvent = eventRepository.save(event);
+        return new EventResponse(savedEvent.getId(),
+                savedEvent.getTitle(),
+                savedEvent.getVenue(),
+                savedEvent.getEventDate(),
+                savedEvent.getMaxCapacity(),
+                savedEvent.getPrice(),
+                savedEvent.getStatus(),
+                savedEvent.getCreatedAt(),
+                savedEvent.getOrganiser().getName());
+    }
 }

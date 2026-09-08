@@ -8,5 +8,6 @@ public interface EventService {
     EventResponse createEvent(EventRequest request, User organiser);
     EventResponse publishEvent(Long eventId, User organiser);
     EventResponse unpublishEvent(Long eventId, User organiser);
+    EventResponse cancelEvent(Long eventId, User organiser);
 
 }

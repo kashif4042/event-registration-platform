@@ -41,4 +41,11 @@ public class EventController {
         EventResponse response = eventService.unpublishEvent(id, customUserDetails.getUser());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<EventResponse> cancelEvent(@PathVariable Long id,
+                                                     @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        EventResponse response = eventService.cancelEvent(id, customUserDetails.getUser());
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 }
