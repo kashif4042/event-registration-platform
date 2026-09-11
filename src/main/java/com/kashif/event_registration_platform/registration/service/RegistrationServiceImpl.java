@@ -2,6 +2,7 @@ package com.kashif.event_registration_platform.registration.service;
 
 import com.kashif.event_registration_platform.auth.entity.User;
 import com.kashif.event_registration_platform.common.exception.DuplicateResourceException;
+import com.kashif.event_registration_platform.common.exception.InvalidStateTransitionException;
 import com.kashif.event_registration_platform.common.exception.ResourceNotFoundException;
 import com.kashif.event_registration_platform.event.entity.Event;
 import com.kashif.event_registration_platform.event.repository.EventRepository;
@@ -34,14 +35,18 @@ public class RegistrationServiceImpl implements RegistrationService {
         if(alreadyRegistered){
             throw new DuplicateResourceException("You are already registered for this event");
         }
-        long confirmedCount = registrationRepository.countByEventAndStatus(event,RegistrationStatus.CONFIRMED);
-        int seatsNeeded = (request.getTeamSize()!= null) ? request.getTeamSize() : 1;
+        int seatsNeeded = (request.getTeamSize() != null) ? request.getTeamSize() : 1;
+
+        if (seatsNeeded > event.getMaxCapacity()) {
+            throw new InvalidStateTransitionException("Requested team size exceeds this event's maximum capacity");
+        }
+
+        long confirmedCount = registrationRepository.countByEventAndStatus(event, RegistrationStatus.CONFIRMED);
 
         RegistrationStatus status;
-        if(confirmedCount + seatsNeeded <= event.getMaxCapacity()){
+        if (confirmedCount + seatsNeeded <= event.getMaxCapacity()) {
             status = RegistrationStatus.CONFIRMED;
-        }
-        else {
+        } else {
             status = RegistrationStatus.WAITLISTED;
         }
 
