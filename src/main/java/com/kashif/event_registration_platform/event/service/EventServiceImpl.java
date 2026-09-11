@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -115,5 +117,23 @@ public class EventServiceImpl implements EventService {
                 savedEvent.getStatus(),
                 savedEvent.getCreatedAt(),
                 savedEvent.getOrganiser().getName());
+    }
+
+    @Override
+    public List<EventResponse> getPublishedEvents() {
+        List<Event> events = eventRepository.findByStatus(EventStatus.PUBLISHED);
+        return events.stream()
+                .map(event -> new EventResponse(
+                        event.getId(),
+                        event.getTitle(),
+                        event.getVenue(),
+                        event.getEventDate(),
+                        event.getMaxCapacity(),
+                        event.getPrice(),
+                        event.getStatus(),
+                        event.getCreatedAt(),
+                        event.getOrganiser().getName()
+                ))
+                .collect(Collectors.toList());
     }
 }
