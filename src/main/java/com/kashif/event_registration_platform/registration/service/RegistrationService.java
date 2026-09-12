@@ -6,4 +6,5 @@ import com.kashif.event_registration_platform.registration.dto.RegistrationRespo
 
 public interface RegistrationService {
     RegistrationResponse registerForEvent(Long eventId, RegistrationRequest request, User user);
+    RegistrationResponse cancelRegistration (Long registrationId, User user);
 }
