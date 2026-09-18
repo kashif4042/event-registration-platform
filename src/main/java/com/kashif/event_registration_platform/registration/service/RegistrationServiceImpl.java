@@ -14,6 +14,7 @@ import com.kashif.event_registration_platform.registration.entity.RegistrationSt
 import com.kashif.event_registration_platform.registration.entity.TeamRegistration;
 import com.kashif.event_registration_platform.registration.repository.RegistrationRepository;
 import com.kashif.event_registration_platform.registration.repository.TeamRegistrationRepository;
+import com.kashif.event_registration_platform.ticket.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,16 +32,17 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final TeamRegistrationRepository teamRegistrationRepository;
+    private final TicketService ticketService;
 
     @Override
     @Transactional
-    public RegistrationResponse registerForEvent(Long eventId,RegistrationRequest request, User user){
+    public RegistrationResponse registerForEvent(Long eventId, RegistrationRequest request, User user) {
         Event event = eventRepository.findByIdForUpdate(eventId)
-                .orElseThrow(()-> new ResourceNotFoundException("Event Not Found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Event Not Found"));
         boolean alreadyRegistered = registrationRepository.existsByUserAndEventAndStatusIn(
-                user,event, List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.WAITLISTED)
+                user, event, List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.WAITLISTED)
         );
-        if(alreadyRegistered){
+        if (alreadyRegistered) {
             throw new DuplicateResourceException("You are already registered for this event");
         }
         int seatsNeeded = (request.getTeamSize() != null) ? request.getTeamSize() : 1;
@@ -78,6 +80,11 @@ public class RegistrationServiceImpl implements RegistrationService {
                 registration.setRegisteredAt(LocalDateTime.now());
                 registration.setTeamRegistration(savedTeamRegistration);
                 Registration saved = registrationRepository.save(registration);
+
+                if (status == RegistrationStatus.CONFIRMED) {
+                    ticketService.createTicketForRegistration(saved);
+                }
+
                 if (i == 0) {
                     firstRegistration = saved;
                 }
@@ -92,6 +99,10 @@ public class RegistrationServiceImpl implements RegistrationService {
             registration.setStatus(status);
             registration.setRegisteredAt(LocalDateTime.now());
             leadRegistration = registrationRepository.save(registration);
+
+            if (status == RegistrationStatus.CONFIRMED) {
+                ticketService.createTicketForRegistration(leadRegistration);
+            }
         }
 
         return new RegistrationResponse(
@@ -111,34 +122,33 @@ public class RegistrationServiceImpl implements RegistrationService {
 
         for (Registration reg : waitlisted) {
             if (availableSeats <= 0) {
-                break; // no more capacity to give away
+                break;
             }
 
             TeamRegistration team = reg.getTeamRegistration();
 
             if (team != null) {
-                // Skip if we've already processed this team (from an earlier row in the loop)
                 if (processedTeamIds.contains(team.getId())) {
                     continue;
                 }
                 int groupSize = team.getMemberCount();
                 if (groupSize <= availableSeats) {
-                    // Promote every registration row belonging to this team
                     List<Registration> teamMembers = waitlisted.stream()
                             .filter(r -> r.getTeamRegistration() != null && r.getTeamRegistration().getId().equals(team.getId()))
                             .collect(Collectors.toList());
                     for (Registration member : teamMembers) {
                         member.setStatus(RegistrationStatus.CONFIRMED);
-                        registrationRepository.save(member);
+                        Registration saved = registrationRepository.save(member);
+                        ticketService.createTicketForRegistration(saved);
                     }
                     availableSeats -= groupSize;
                 }
-                processedTeamIds.add(team.getId()); // mark as processed whether promoted or skipped
+                processedTeamIds.add(team.getId());
             } else {
-                // Solo registration, group size is 1
                 if (1 <= availableSeats) {
                     reg.setStatus(RegistrationStatus.CONFIRMED);
-                    registrationRepository.save(reg);
+                    Registration saved = registrationRepository.save(reg);
+                    ticketService.createTicketForRegistration(saved);
                     availableSeats -= 1;
                 }
             }
@@ -147,7 +157,7 @@ public class RegistrationServiceImpl implements RegistrationService {
 
     @Override
     @Transactional
-    public RegistrationResponse cancelRegistration(Long registrationId, User user){
+    public RegistrationResponse cancelRegistration(Long registrationId, User user) {
         Registration registration = registrationRepository.findById(registrationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Registration not found"));
 
@@ -159,7 +169,6 @@ public class RegistrationServiceImpl implements RegistrationService {
             throw new InvalidStateTransitionException("This registration is already cancelled");
         }
 
-// Lock the event row before touching capacity-related logic
         Event event = eventRepository.findByIdForUpdate(registration.getEvent().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
@@ -179,10 +188,5 @@ public class RegistrationServiceImpl implements RegistrationService {
                 savedRegistration.getRegisteredAt(),
                 savedRegistration.getTeamRegistration() != null ? savedRegistration.getTeamRegistration().getId() : null
         );
-
-
-
     }
-
-
 }
