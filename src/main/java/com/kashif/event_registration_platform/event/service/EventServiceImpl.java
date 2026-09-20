@@ -9,6 +9,10 @@ import com.kashif.event_registration_platform.event.dto.EventResponse;
 import com.kashif.event_registration_platform.event.entity.Event;
 import com.kashif.event_registration_platform.event.entity.EventStatus;
 import com.kashif.event_registration_platform.event.repository.EventRepository;
+import com.kashif.event_registration_platform.notification.service.NotificationService;
+import com.kashif.event_registration_platform.registration.entity.Registration;
+import com.kashif.event_registration_platform.registration.entity.RegistrationStatus;
+import com.kashif.event_registration_platform.registration.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +24,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
+    private final NotificationService notificationService;
+    private final RegistrationRepository registrationRepository;
 
     @Override
     public EventResponse createEvent(EventRequest request, User organiser) {
@@ -108,6 +114,18 @@ public class EventServiceImpl implements EventService {
 
         event.setStatus(EventStatus.CANCELLED);
         Event savedEvent = eventRepository.save(event);
+        //for Notification
+        List<Registration> affectedRegistrations = registrationRepository.findByEventAndStatusIn(
+                savedEvent, List.of(RegistrationStatus.CONFIRMED, RegistrationStatus.WAITLISTED)
+        );
+
+        for (Registration reg : affectedRegistrations) {
+            notificationService.sendEmail(
+                    reg.getUser().getEmail(),
+                    "Event Cancelled: " + savedEvent.getTitle(),
+                    "We're sorry to inform you that the event \"" + savedEvent.getTitle() + "\" has been cancelled."
+            );
+        }
         return new EventResponse(savedEvent.getId(),
                 savedEvent.getTitle(),
                 savedEvent.getVenue(),

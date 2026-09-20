@@ -7,6 +7,7 @@ import com.kashif.event_registration_platform.common.exception.ResourceNotFoundE
 import com.kashif.event_registration_platform.common.exception.UnauthorizedActionException;
 import com.kashif.event_registration_platform.event.entity.Event;
 import com.kashif.event_registration_platform.event.repository.EventRepository;
+import com.kashif.event_registration_platform.notification.service.NotificationService;
 import com.kashif.event_registration_platform.registration.dto.RegistrationRequest;
 import com.kashif.event_registration_platform.registration.dto.RegistrationResponse;
 import com.kashif.event_registration_platform.registration.entity.Registration;
@@ -33,6 +34,7 @@ public class RegistrationServiceImpl implements RegistrationService {
     private final EventRepository eventRepository;
     private final TeamRegistrationRepository teamRegistrationRepository;
     private final TicketService ticketService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -104,6 +106,11 @@ public class RegistrationServiceImpl implements RegistrationService {
                 ticketService.createTicketForRegistration(leadRegistration);
             }
         }
+        if (status == RegistrationStatus.CONFIRMED) {
+            notificationService.sendEmail(user.getEmail(), "Registration Confirmed", "You're confirmed for " + event.getTitle() + "!");
+        } else {
+            notificationService.sendEmail(user.getEmail(), "Added to Waitlist", "You've been waitlisted for " + event.getTitle() + ".");
+        }
 
         return new RegistrationResponse(
                 leadRegistration.getId(),
@@ -142,6 +149,12 @@ public class RegistrationServiceImpl implements RegistrationService {
                         ticketService.createTicketForRegistration(saved);
                     }
                     availableSeats -= groupSize;
+                    // Mail for TeamLead
+                    notificationService.sendEmail(
+                            team.getLeadUser().getEmail(),
+                            "Promoted from Waitlist",
+                            "Good news! You've been promoted from the waitlist for " + event.getTitle() + "."
+                    );
                 }
                 processedTeamIds.add(team.getId());
             } else {
@@ -150,8 +163,15 @@ public class RegistrationServiceImpl implements RegistrationService {
                     Registration saved = registrationRepository.save(reg);
                     ticketService.createTicketForRegistration(saved);
                     availableSeats -= 1;
+                    //Mail for solo booker
+                    notificationService.sendEmail(
+                            reg.getUser().getEmail(),
+                            "Promoted from Waitlist",
+                            "Good news! You've been promoted from the waitlist for " + event.getTitle() + "."
+                    );
                 }
             }
+
         }
     }
 
