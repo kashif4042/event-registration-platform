@@ -44,5 +44,8 @@ public class Event {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Column(name = "reminder_sent", nullable = false)
+    private Boolean reminderSent = false;
+
 
 }

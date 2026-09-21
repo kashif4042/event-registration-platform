@@ -1,8 +1,13 @@
 package com.kashif.event_registration_platform.notification.service;
 
+import com.kashif.event_registration_platform.event.entity.Event;
+import com.kashif.event_registration_platform.event.repository.EventRepository;
 import com.kashif.event_registration_platform.notification.entity.EmailRetryQueue;
 import com.kashif.event_registration_platform.notification.entity.EmailStatus;
 import com.kashif.event_registration_platform.notification.repository.EmailRetryQueueRepository;
+import com.kashif.event_registration_platform.registration.entity.Registration;
+import com.kashif.event_registration_platform.registration.entity.RegistrationStatus;
+import com.kashif.event_registration_platform.registration.repository.RegistrationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,11 +18,15 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
+
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService{
     private final EmailRetryQueueRepository emailRetryQueueRepository;
     private final JavaMailSender mailSender;
+    private final EventRepository eventRepository;
+    private final RegistrationRepository registrationRepository;
 
     @Async
     @Override
@@ -72,6 +81,31 @@ public class NotificationServiceImpl implements NotificationService{
                 }
                 emailRetryQueueRepository.save(emailEntry);
             }
+        }
+    }
+    @Scheduled(cron = "0 0 * * * *")
+    @Override
+    public void sendEventReminders(){
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime in24hrs = LocalDateTime.now().plusHours(24);
+
+        List<Event> upcomingEvents = eventRepository.findByEventDateBetween(now,in24hrs);
+
+        for (Event event : upcomingEvents) {
+            if (Boolean.TRUE.equals(event.getReminderSent())) {
+                continue;
+            }
+            List<Registration> confirmedRegistration =
+                    registrationRepository.findByEventAndStatusIn(event, List.of(RegistrationStatus.CONFIRMED));
+            for (Registration reg : confirmedRegistration) {
+                sendEmail(
+                        reg.getUser().getEmail(),
+                        "Reminder: " + event.getTitle() + " is coming up!",
+                        "This is a reminder that \"" + event.getTitle() + "\" starts within 24 hours at " + event.getVenue() + "."
+                );
+            }
+            event.setReminderSent(true);
+            eventRepository.save(event);
         }
     }
 
