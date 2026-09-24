@@ -1,5 +1,6 @@
 package com.kashif.event_registration_platform.admin.controller;
 
+import com.kashif.event_registration_platform.admin.dto.RevenueSummaryResponse;
 import com.kashif.event_registration_platform.admin.dto.StatsResponse;
 import com.kashif.event_registration_platform.admin.service.AdminService;
 import com.kashif.event_registration_platform.auth.entity.User;
@@ -22,6 +23,12 @@ public class AdminController {
     public ResponseEntity<StatsResponse> getEventStats(@PathVariable Long id,
                                                        @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         StatsResponse response = adminService.getEventStats(id, customUserDetails.getUser());
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/revenue-summary")
+    public ResponseEntity<RevenueSummaryResponse> getRevenueSummary(@AuthenticationPrincipal CustomUserDetails customUserDetails){
+        RevenueSummaryResponse response = adminService.getRevenueSummary(customUserDetails.getUser());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
