@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,6 +27,7 @@ public class EventController {
     private final RegistrationService registrationService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ORGANISER')")
     public ResponseEntity<EventResponse> createEvent
             (@Valid @RequestBody EventRequest request,
              @AuthenticationPrincipal CustomUserDetails customUserDetails) {
@@ -35,6 +37,7 @@ public class EventController {
     }
 
     @PatchMapping("/{id}/publish")
+    @PreAuthorize("hasRole('ORGANISER')")
     public ResponseEntity<EventResponse> publishEvent(@PathVariable Long id,
                                                       @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         EventResponse response = eventService.publishEvent(id, customUserDetails.getUser());
@@ -42,6 +45,7 @@ public class EventController {
     }
 
     @PatchMapping("/{id}/unpublish")
+    @PreAuthorize("hasRole('ORGANISER')")
     public ResponseEntity<EventResponse> unpublishEvent(@PathVariable Long id,
                                                         @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         EventResponse response = eventService.unpublishEvent(id, customUserDetails.getUser());
@@ -49,6 +53,7 @@ public class EventController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('ORGANISER')")
     public ResponseEntity<EventResponse> cancelEvent(@PathVariable Long id,
                                                      @AuthenticationPrincipal CustomUserDetails customUserDetails) {
         EventResponse response = eventService.cancelEvent(id, customUserDetails.getUser());
