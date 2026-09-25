@@ -5,14 +5,12 @@ import com.kashif.event_registration_platform.admin.dto.StatsResponse;
 import com.kashif.event_registration_platform.admin.service.AdminService;
 import com.kashif.event_registration_platform.auth.entity.User;
 import com.kashif.event_registration_platform.common.security.CustomUserDetails;
+import com.kashif.event_registration_platform.event.dto.EventResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -29,6 +27,12 @@ public class AdminController {
     @GetMapping("/revenue-summary")
     public ResponseEntity<RevenueSummaryResponse> getRevenueSummary(@AuthenticationPrincipal CustomUserDetails customUserDetails){
         RevenueSummaryResponse response = adminService.getRevenueSummary(customUserDetails.getUser());
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PatchMapping("/events/{id}/cancel")
+    public ResponseEntity<EventResponse> bulkCancelEvent(@PathVariable Long id, @AuthenticationPrincipal CustomUserDetails customUserDetails){
+        EventResponse response = adminService.bulkCancelEvent(id, customUserDetails.getUser());
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
