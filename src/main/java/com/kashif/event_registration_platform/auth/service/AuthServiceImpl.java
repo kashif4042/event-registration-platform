@@ -1,9 +1,6 @@
 package com.kashif.event_registration_platform.auth.service;
 
-import com.kashif.event_registration_platform.auth.dto.AuthResponse;
-import com.kashif.event_registration_platform.auth.dto.LoginRequest;
-import com.kashif.event_registration_platform.auth.dto.RegisterRequest;
-import com.kashif.event_registration_platform.auth.dto.UserResponse;
+import com.kashif.event_registration_platform.auth.dto.*;
 import com.kashif.event_registration_platform.auth.entity.Role;
 import com.kashif.event_registration_platform.auth.entity.User;
 import com.kashif.event_registration_platform.auth.repository.UserRepository;
@@ -68,6 +65,31 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
         UserResponse userResponse = new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getIsVerified());
         return new AuthResponse(accessToken, refreshToken, userResponse);
+        }
+
+        @Override
+        public AuthResponse refreshToken(RefreshRequest request){
+        String email = jwtUtil.extractUsername(request.getRefreshToken());
+
+         User user = userRepository.findByEmail(email)
+                 .orElseThrow(() -> new ResourceNotFoundException("Invalid refresh token"));
+         if(!request.getRefreshToken().equals(user.getRefreshToken())){
+             throw new ResourceNotFoundException("Invalid refresh token");
+         }
+         CustomUserDetails customUserDetails = new CustomUserDetails(user);
+         if(!jwtUtil.isTokenValid(request.getRefreshToken(), customUserDetails)){
+             throw new ResourceNotFoundException("Invalid refresh token");
+         }
+
+            String newAccessToken = jwtUtil.generateAccessToken(customUserDetails);
+            String newRefreshToken = jwtUtil.generateRefreshToken(customUserDetails);
+
+            user.setRefreshToken(newRefreshToken);
+            userRepository.save(user);
+
+            UserResponse userResponse = new UserResponse(user.getId(), user.getName(), user.getEmail(), user.getRole(), user.getIsVerified());
+            return new AuthResponse(newAccessToken, newRefreshToken, userResponse);
+
         }
     }
 

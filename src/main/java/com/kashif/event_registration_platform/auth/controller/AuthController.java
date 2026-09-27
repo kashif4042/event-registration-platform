@@ -1,8 +1,5 @@
 package com.kashif.event_registration_platform.auth.controller;
-import com.kashif.event_registration_platform.auth.dto.AuthResponse;
-import com.kashif.event_registration_platform.auth.dto.LoginRequest;
-import com.kashif.event_registration_platform.auth.dto.RegisterRequest;
-import com.kashif.event_registration_platform.auth.dto.UserResponse;
+import com.kashif.event_registration_platform.auth.dto.*;
 import com.kashif.event_registration_platform.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +25,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request){
         AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshRequest request){
+        AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
     }
 }
