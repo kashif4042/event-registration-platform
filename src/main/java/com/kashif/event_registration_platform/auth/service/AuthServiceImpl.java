@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -127,5 +128,33 @@ public class AuthServiceImpl implements AuthService {
 
         redisTemplate.delete(token);
     }
-}
 
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+        Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            String token = UUID.randomUUID().toString();
+            redisTemplate.opsForValue().set("reset:" + token, user.getEmail(), 15, TimeUnit.MINUTES);
+            notificationService.sendEmail(
+                    user.getEmail(),
+                    "Reset your password",
+                    "Use this token to reset your password: " + token
+            );
+        }
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request){
+        String key = "reset:" + request.getToken();
+        String email = redisTemplate.opsForValue().get(key);
+        if(email == null){
+            throw new ResourceNotFoundException("Invalid or expired reset token");
+        }
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        redisTemplate.delete(key);
+    }
+}

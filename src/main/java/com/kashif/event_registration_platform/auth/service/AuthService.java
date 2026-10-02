@@ -8,5 +8,7 @@ public interface AuthService {
     AuthResponse login(LoginRequest request);
     AuthResponse refreshToken(RefreshRequest request);
     void verifyEmail(String token);
+    void forgotPassword(ForgotPasswordRequest request);
+    void resetPassword(ResetPasswordRequest request);
 
 }
