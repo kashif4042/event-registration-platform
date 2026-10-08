@@ -1,6 +1,7 @@
 package com.kashif.event_registration_platform.ticket.repository;
 
 import com.kashif.event_registration_platform.event.entity.Event;
+import com.kashif.event_registration_platform.registration.entity.Registration;
 import com.kashif.event_registration_platform.ticket.entity.Ticket;
 import com.kashif.event_registration_platform.ticket.entity.TicketStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,4 +13,5 @@ public interface TicketRepository extends JpaRepository<Ticket,Long> {
     Optional<Ticket> findByToken(UUID token);
     //for Analytics
     long countByRegistration_EventAndStatus(Event event, TicketStatus status);
+    Optional<Ticket> findByRegistration(Registration registration);
 }

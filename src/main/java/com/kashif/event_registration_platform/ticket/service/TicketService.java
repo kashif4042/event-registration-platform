@@ -10,5 +10,6 @@ import java.util.UUID;
 public interface TicketService {
     Ticket createTicketForRegistration(Registration registration);
     TicketResponse checkIn(UUID token, User organiser);
+    void cancelTicketForRegistration(Registration registration);
 
 }

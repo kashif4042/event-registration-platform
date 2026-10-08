@@ -65,4 +65,15 @@ public class TicketServiceImpl implements TicketService {
         );
     }
 
+    @Override
+    public void cancelTicketForRegistration(Registration registration) {
+        ticketRepository.findByRegistration(registration).ifPresent(ticket -> {
+            // only a still-valid ticket gets cancelled
+            if (ticket.getStatus() == TicketStatus.CONFIRMED) {
+                ticket.setStatus(TicketStatus.CANCELLED);
+                ticketRepository.save(ticket);
+            }
+        });
+    }
+
 }

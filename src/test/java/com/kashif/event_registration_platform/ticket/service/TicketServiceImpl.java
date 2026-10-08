@@ -55,7 +55,6 @@ class TicketServiceImplTest {
         return ticket;
     }
 
-    // ---------- createTicketForRegistration ----------
 
     @Test
     void createTicket_shouldIssueConfirmedTicketWithUniqueToken() {
@@ -71,7 +70,7 @@ class TicketServiceImplTest {
         assertSame(registration, ticket.getRegistration());
     }
 
-    // ---------- checkIn ----------
+
 
     @Test
     void checkIn_shouldMarkTicketUsed_onFirstScan() {
@@ -127,5 +126,42 @@ class TicketServiceImplTest {
         when(ticketRepository.findByToken(token)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> ticketService.checkIn(token, user(1L)));
+    }
+    @Test
+    void cancelTicket_shouldCancelConfirmedTicket() {
+        Registration registration = new Registration();
+        registration.setId(1L);
+        Ticket ticket = new Ticket();
+        ticket.setStatus(TicketStatus.CONFIRMED);
+        when(ticketRepository.findByRegistration(registration)).thenReturn(Optional.of(ticket));
+
+        ticketService.cancelTicketForRegistration(registration);
+
+        assertEquals(TicketStatus.CANCELLED, ticket.getStatus());
+        verify(ticketRepository).save(ticket);
+    }
+
+    @Test
+    void cancelTicket_shouldLeaveUsedTicketAlone() {
+        Registration registration = new Registration();
+        registration.setId(1L);
+        Ticket ticket = new Ticket();
+        ticket.setStatus(TicketStatus.USED);
+        when(ticketRepository.findByRegistration(registration)).thenReturn(Optional.of(ticket));
+
+        ticketService.cancelTicketForRegistration(registration);
+
+        assertEquals(TicketStatus.USED, ticket.getStatus());
+        verify(ticketRepository, never()).save(any(Ticket.class));
+    }
+
+    @Test
+    void cancelTicket_shouldDoNothing_whenNoTicketExists() {
+        Registration registration = new Registration();
+        registration.setId(1L);
+        when(ticketRepository.findByRegistration(registration)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> ticketService.cancelTicketForRegistration(registration));
+        verify(ticketRepository, never()).save(any(Ticket.class));
     }
 }
