@@ -306,4 +306,22 @@ class RegistrationServiceImplTest {
 
         assertThrows(InvalidStateTransitionException.class, () -> registrationService.cancelRegistration(1L, owner));
     }
+
+    @Test
+    void cancel_confirmed_shouldCancelItsTicket() {
+        User owner = user(1L, "owner@example.com");
+        Event event = event(1L, 5);
+        Registration confirmed = registration(1L, owner, event, RegistrationStatus.CONFIRMED);
+
+        when(registrationRepository.findById(1L)).thenReturn(Optional.of(confirmed));
+        when(eventRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(event));
+        when(registrationRepository.save(any(Registration.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(registrationRepository.countByEventAndStatus(event, RegistrationStatus.CONFIRMED)).thenReturn(0L);
+        when(registrationRepository.findByEventAndStatusOrderByRegisteredAtAsc(event, RegistrationStatus.WAITLISTED))
+                .thenReturn(List.of());
+
+        registrationService.cancelRegistration(1L, owner);
+
+        verify(ticketService).cancelTicketForRegistration(confirmed);
+    }
 }

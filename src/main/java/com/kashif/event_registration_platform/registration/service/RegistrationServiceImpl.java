@@ -197,7 +197,10 @@ public class RegistrationServiceImpl implements RegistrationService {
         Registration savedRegistration = registrationRepository.save(registration);
 
         if (previousStatus == RegistrationStatus.CONFIRMED) {
-            long availableSeats = event.getMaxCapacity() - registrationRepository.countByEventAndStatus(event, RegistrationStatus.CONFIRMED);
+            ticketService.cancelTicketForRegistration(savedRegistration);
+
+            long availableSeats = event.getMaxCapacity()
+                    - registrationRepository.countByEventAndStatus(event, RegistrationStatus.CONFIRMED);
             promoteWaitlistedIfPossible(event, availableSeats);
         }
 
